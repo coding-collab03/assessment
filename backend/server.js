@@ -7,6 +7,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
 
+dotenv.config();
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -15,7 +17,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-dotenv.config();
+
 
 const app = express();
 app.use(cors());
@@ -50,7 +52,7 @@ ${company} operates in a competitive market with opportunities for growth.
 app.post("/submit-lead", async (req, res) => {
   console.log("🔥 ROUTE HIT");
 
-  const { company } = req.body;
+  const { company, email } = req.body;
 
   if (!company) {
     return res.status(400).json({ error: "Company is required" });
