@@ -1,19 +1,19 @@
 # Assessment Project
 
-This is a full-stack web application built for an internship assessment. It uses a React frontend and a Node.js/Express backend.
+This is a full-stack web application built as part of an internship assessment using React for the frontend and Node.js/Express for the backend.
 
 ---
 
 ## Tech Stack
 
-Frontend:
+**Frontend**
 - React (Vite)
 
-Backend:
+**Backend**
 - Node.js
 - Express
 
-Other:
+**Other**
 - Nodemailer
 - dotenv
 - CORS
@@ -21,3 +21,33 @@ Other:
 ---
 
 ## Project Structure
+root/
+├── backend/
+├── frontend/
+├── package.json
+├── package-lock.json
+
+
+## Setup Instructions
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm start
+
+Backend runs on:
+http://localhost:3001
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+
+Frontend runs on:
+http://localhost:5173
+
+
