@@ -1,5 +1,3 @@
-console.log("🔥 THIS IS THE ACTIVE SERVER FILE");
-
 import nodemailer from "nodemailer";
 import fs from "fs";
 import express from "express";
@@ -8,6 +6,56 @@ import dotenv from "dotenv";
 import PDFDocument from "pdfkit";
 
 dotenv.config();
+
+async function generateReport(company, name) {
+  const safeName = name || "Client";
+  const safeCompany = company || "Company";
+
+  const prompt = `
+Generate a professional business audit report.
+
+Client Name: ${safeName}
+Company: ${safeCompany}
+
+Make it personalized and address the client by name where appropriate.
+
+Include:
+- Overview
+- Strengths
+- Weaknesses
+- Recommendations
+
+Do NOT use placeholders like [Your Name].
+`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }],
+          },
+        ],
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  console.log("🔍 FULL GEMINI RESPONSE:");
+  console.dir(data, { depth: null });
+
+  return (
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+    "FAILED_TO_PARSE_RESPONSE"
+  );
+}
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -25,41 +73,18 @@ app.use(express.json());
 
 console.log("🔥 Backend starting...");
 
-function generateReport(company) {
-  return `
-# Company Audit Report: ${company}
-
-## Overview
-${company} operates in a competitive market with opportunities for growth.
-
-## Strengths
-- Market potential
-- Scalability
-- Business flexibility
-
-## Weaknesses
-- Limited automation
-- Weak digital presence
-- Manual processes
-
-## Recommendations
-1. Improve digital marketing
-2. Automate workflows
-3. Strengthen brand presence
-`;
-}
-
 app.post("/submit-lead", async (req, res) => {
   console.log("🔥 ROUTE HIT");
 
-  const { company, email } = req.body;
+  const { company, email, name } = req.body;
+  const safeEmail = email || "test@example.com";
 
   if (!company) {
     return res.status(400).json({ error: "Company is required" });
   }
 
   try {
-    const report = generateReport(company);
+    const report = await generateReport(company, name);
     async function sendEmail(to, company, filePath) {
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
@@ -94,8 +119,8 @@ app.post("/submit-lead", async (req, res) => {
     doc.end();
 
     console.log("📄 PDF GENERATED:", fileName);
-    await sendEmail(email, company, fileName);
-console.log("📧 EMAIL SENT TO:", email);
+    await sendEmail(safeEmail, company, fileName);
+console.log("📧 EMAIL SENT TO:", safeEmail);
 
     res.json({
   message: "Report generated and emailed successfully",
