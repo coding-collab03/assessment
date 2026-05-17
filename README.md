@@ -21,12 +21,16 @@ This is a full-stack web application built as part of an internship assessment u
 ---
 
 ## Project Structure
+
+```
 root/
 ├── backend/
 ├── frontend/
 ├── package.json
 ├── package-lock.json
+```
 
+---
 
 ## Setup Instructions
 
@@ -36,9 +40,11 @@ root/
 cd backend
 npm install
 npm start
+```
 
 Backend runs on:
-http://localhost:3001
+
+- http://localhost:3001
 
 ### Frontend
 
@@ -46,8 +52,17 @@ http://localhost:3001
 cd frontend
 npm install
 npm run dev
+```
 
 Frontend runs on:
-http://localhost:5173
 
+- http://localhost:5173
+
+---
+
+## Notes
+
+- Ensure you have Node.js installed.
+- Add any backend environment variables to `backend/.env` before starting the backend.
+- Run both backend and frontend concurrently in separate terminals to use the full application.
 
