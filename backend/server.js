@@ -10,10 +10,16 @@ dotenv.config();
 async function generateReport(company, name) {
   const safeName = name || "Client";
   const safeCompany = company || "Company";
+  const currentDate = new Date().toLocaleDateString("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
 
   const prompt = `
 Generate a professional business audit report.
 
+Date: ${currentDate}
 Client Name: ${safeName}
 Company: ${safeCompany}
 
@@ -26,6 +32,7 @@ Include:
 - Recommendations
 
 Do NOT use placeholders like [Your Name].
+Do NOT include fictional placeholders, bracketed text, or imaginary company names.
 `;
 
   const response = await fetch(
@@ -97,7 +104,7 @@ app.post("/submit-lead", async (req, res) => {
   });
 }
 
-    console.log("📄 REPORT GENERATED:\n", report);
+    console.log("Report generated successfully");
 
     const doc = new PDFDocument();
 
@@ -111,7 +118,12 @@ app.post("/submit-lead", async (req, res) => {
 
     doc.moveDown();
 
-    doc.fontSize(12).text(report);
+    const cleanReport = report
+  .replace(/#/g, "")
+  .replace(/\*\*/g, "")
+  .replace(/\*/g, "");
+
+doc.fontSize(12).text(cleanReport);
 
     doc.end();
 
