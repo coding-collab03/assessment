@@ -112,7 +112,7 @@ EMAIL_PASS=your_app_password_here
 
 # Google Sheets
 SPREADSHEET_ID=
-SHEET_NAME=Sheet1
+SHEET_NAME=
 
 # Google Drive
 DRIVE_FOLDER_ID=
