@@ -4,6 +4,15 @@ This repository contains a full-stack web application with a React + Vite fronte
 
 ---
 
+## Features
+
+- Generates AI-powered business audit reports
+- Converts reports into downloadable PDFs
+- Sends reports via email automatically
+- Uploads PDFs to Google Drive
+- Logs leads into Google Sheets
+
+  
 ## Tech Stack
 
 **Frontend**
@@ -19,8 +28,7 @@ This repository contains a full-stack web application with a React + Vite fronte
 **Other tools**
 - Nodemailer
 - PDFKit
-- Google Gemini / Generative AI API
-- Axios
+- Google Gemini API
 - Google Drive API
 - Google Sheets API
 
@@ -100,10 +108,6 @@ GEMINI_API_KEY=
 # GMAIL (Nodemailer)
 EMAIL_USER=your_email_here
 EMAIL_PASS=your_app_password_here
-
-
-# Gemini API
-GEMINI_API_KEY=
 
 
 # Google Sheets
