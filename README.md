@@ -21,6 +21,8 @@ This repository contains a full-stack web application with a React + Vite fronte
 - PDFKit
 - Google Gemini / Generative AI API
 - Axios
+- Google Drive API
+- Google Sheets API
 
 ---
 
@@ -82,7 +84,7 @@ npm run dev
 
 The frontend runs on:
 
-- http://localhost:5173
+- http://localhost:5174 (may vary between 5173–5174 depending on Vite)
 
 ---
 
@@ -91,9 +93,12 @@ The frontend runs on:
 Create `backend/.env` with the following values:
 
 ```env
-GEMINI_API_KEY=your_google_gemini_api_key
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_email_password_or_app_password
+# Google Drive API
+DRIVE_FOLDER_ID=
+
+# Google Sheets API
+SPREADSHEET_ID=
+SHEET_NAME=Sheet1
 ```
 
 > If you use Gmail, generate an App Password and enable the required account access settings.
@@ -105,6 +110,7 @@ EMAIL_PASS=your_email_password_or_app_password
 - Run backend and frontend in separate terminals.
 - The backend generates a PDF audit report and sends it by email using the configured SMTP credentials.
 - Make sure Node.js is installed before running either service.
+- Google Drive and Google Sheets require proper API setup and credentials in Google Cloud Console
 
 ## Limitations
 
