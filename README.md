@@ -106,3 +106,8 @@ EMAIL_PASS=your_email_password_or_app_password
 - The backend generates a PDF audit report and sends it by email using the configured SMTP credentials.
 - Make sure Node.js is installed before running either service.
 
+## Limitations
+
+- AI-generated reports depend on the quality of the submitted company information.
+- The application currently uses Gemini API-generated insights rather than live web scraping or external company databases.
+- Gmail SMTP requires valid credentials and App Password configuration.
