@@ -1,0 +1,71 @@
+Overview
+
+For this assignment, I built a full end-to-end lead automation system that simulates how a business would handle incoming client inquiries. The system accepts a lead form submission, validates the input, enriches company data using web scraping, generates a personalized business audit report using the Gemini API, converts it into a PDF, and automatically emails it to the client. It also logs each lead into Google Sheets and uploads a copy to Google Drive for tracking and backup.
+
+The goal was to fully automate the workflow from form submission to final delivery without any manual steps.
+
+How the system works
+
+The process starts when a POST request is sent to /submit-lead. The backend first validates the input, especially ensuring a valid email and required fields like company name.
+
+If a website URL is provided, the system scrapes publicly available data using Axios and Cheerio. It extracts the page title, meta description, headings, and paragraph content to build context about the company.
+
+This scraped data is then sent to the Gemini API along with a structured prompt. The prompt instructs the model to generate a professional business audit report with sections such as executive summary, strengths, weaknesses, opportunities, recommendations, and a personalized outreach message.
+
+Once the report is generated, it is converted into a PDF using PDFKit. The PDF is then emailed to the client using Nodemailer.
+
+Finally, the lead is logged into Google Sheets and the PDF is uploaded to Google Drive for storage.
+
+Key design decisions
+
+I kept the project as a single Express server to focus on simplicity and end-to-end functionality rather than complex architecture.
+
+I used Gemini API because it provides strong text generation quality and integrates easily via REST API.
+
+For scraping, I used Cheerio instead of heavier tools like Puppeteer since the goal was to extract basic static content (meta tags, headings, paragraphs), which is enough for generating context.
+
+I also added fallback behavior so that if the AI fails or returns an empty response, the system still generates a basic report instead of crashing.
+
+Tradeoffs and limitations
+
+There are a few tradeoffs in this implementation:
+
+The scraping approach is basic and may not work on JavaScript-heavy websites
+The workflow is synchronous, which could affect performance under high load
+There is no job queue system, so scalability is limited
+PDF output is simple and text-based rather than visually designed
+
+These were intentional choices to prioritize completing the full workflow within scope.
+
+Error handling and reliability
+
+The system includes basic error handling around external services such as:
+
+Gemini API calls
+website scraping
+Google Drive upload
+email sending
+
+If the AI generation fails, a fallback report is returned so the workflow still completes. Email validation is also enforced to prevent invalid requests.
+
+Optional services like Google Drive do not block the main process if they fail.
+
+AI usage
+
+The Gemini API is used as the core intelligence layer of the system. I structured the prompt carefully to ensure the output is professional, consistent, and focused on business analysis.
+
+I also made sure to clearly distinguish between the client (the person submitting the form) and the company being analyzed to avoid incorrect assumptions in the generated report.
+
+Future improvements
+
+If I had more time, I would improve the system by:
+
+Adding a job queue (BullMQ or similar) for async processing
+Using a headless browser (like Puppeteer) for better scraping of dynamic websites
+Adding retry logic for external API failures
+Improving PDF formatting with templates instead of plain text
+Adding authentication and rate limiting for production use
+Structuring AI output as JSON before rendering the PDF for better formatting control
+Final thoughts
+
+Overall, this project focuses on building a working automated workflow rather than a complex system architecture. The main priority was reliability, clarity, and demonstrating practical use of AI in a real-world business automation scenario.

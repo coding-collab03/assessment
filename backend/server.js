@@ -19,15 +19,33 @@ async function scrapeWebsite(url) {
     }
 
     const { data } = await axios.get(url, {
-  timeout: 10000,
-  headers: {
-    "User-Agent": "Mozilla/5.0",
-  },
-});
+      timeout: 10000,
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+      },
+    });
 
     const $ = cheerio.load(data);
 
-    const text = $("body").text();
+    const description =
+  $('meta[name="description"]').attr("content") ||
+  $('meta[property="og:description"]').attr("content") ||
+  "";
+
+    const title = $("title").text();
+    const headings = $("h1, h2").text();
+    const paragraphs = $("p").text();
+
+    const text = `
+Title: ${title}
+OG Title: ${ogTitle}
+Meta Description: ${description}
+Keywords: ${keywords}
+
+Headings: ${headings}
+
+Content: ${paragraphs}
+`;
 
     return text.replace(/\s+/g, " ").slice(0, 4000);
 
@@ -70,6 +88,15 @@ Company: ${safeCompany}
 Company Website Content:
 ${websiteContent || "No website content available."}
 
+IMPORTANT ROLE CLARIFICATION:
+- Client Name is the person submitting the form (DO NOT assume they are the founder or owner)
+- Company is the business being analyzed
+
+DO NOT:
+- assume ownership roles (e.g. "led by", "founded by") unless explicitly stated
+- use placeholders like [Your Name], [Your Title], or signature blocks
+- include sender details in the final output
+
 Analyze the business and generate:
 
 1. Executive Summary
@@ -79,6 +106,11 @@ Analyze the business and generate:
 5. Opportunities
 6. Recommendations
 7. Personalized Outreach Message
+
+For the Personalized Outreach Message:
+- Write it like a professional email
+- Do NOT include sender name, title, or signature section
+- End naturally without placeholders
 
 Be specific to the company.
 Avoid generic statements.
@@ -92,12 +124,15 @@ Keep the tone professional.
     );
 
     const data = await response.json();
+console.log("GEMINI RAW RESPONSE:", JSON.stringify(data, null, 2));
 
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!response.ok || !text) {
-      throw new Error("Gemini failed or empty response");
-    }
+  console.log("STATUS:", response.status);
+  console.log("BODY:", data);
+  throw new Error("Gemini failed or empty response");
+}
 
     return text;
 
@@ -176,47 +211,52 @@ app.post("/submit-lead", async (req, res) => {
       .replace(/[^a-z0-9]/gi, "_")
       .toLowerCase();
 
-    const fileName = `${safeFileCompany}_${Date.now()}_report.pdf`;
+    const fileName = `/tmp/${safeFileCompany}_${Date.now()}_report.pdf`;
 
     await new Promise((resolve, reject) => {
-  const stream = fs.createWriteStream(fileName);
+  let stream;
 
-  stream.on("finish", resolve);
-  stream.on("error", reject);
+  try {
+    stream = fs.createWriteStream(fileName);
 
-  doc.pipe(stream);
+    stream.on("finish", resolve);
+    stream.on("error", reject);
 
-  const cleanReport = report
-    .replace(/#/g, "")
-    .replace(/\*\*/g, "")
-    .replace(/\*/g, "");
+    doc.pipe(stream);
 
-  doc.fillColor("#1E3A8A");
+    const cleanReport = report
+      .replace(/#/g, "")
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "");
 
-  doc.fontSize(24).text(`${company} Audit Report`, {
-    align: "center",
-  });
+    doc.fillColor("#1E3A8A");
 
-  doc.moveDown();
-
-  doc.fillColor("gray");
-
-  doc.fontSize(10).text(
-    `Generated on ${new Date().toLocaleString()}`,
-    {
+    doc.fontSize(24).text(`${company} Audit Report`, {
       align: "center",
-    }
-  );
+    });
 
-  doc.moveDown(2);
+    doc.moveDown();
 
-  doc.fillColor("black");
+    doc.fillColor("gray");
 
-  doc.fontSize(12).text(cleanReport, {
-    lineGap: 4,
-  });
+    doc.fontSize(10).text(
+      `Generated on ${new Date().toLocaleString()}`,
+      { align: "center" }
+    );
 
-  doc.end();
+    doc.moveDown(2);
+
+    doc.fillColor("black");
+
+    doc.fontSize(12).text(cleanReport, {
+      lineGap: 4,
+    });
+
+    doc.end();
+
+  } catch (err) {
+    reject(err);
+  }
 });
 
     let driveFile = null;
@@ -248,7 +288,11 @@ app.post("/submit-lead", async (req, res) => {
       attachments: [{ filename: fileName, path: fileName }],
     });
 
-    fs.unlinkSync(fileName);
+    try {
+  fs.unlinkSync(fileName);
+} catch (e) {
+  console.log("File cleanup failed:", e.message);
+}
 
     await appendLead({
       name: safeName,
