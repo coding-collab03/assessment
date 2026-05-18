@@ -36,8 +36,8 @@ root/
 ├── frontend/
 │   ├── package.json
 │   └── src/
-├── package.json
 ├── package-lock.json
+├── package.json
 └── README.md
 ```
 
