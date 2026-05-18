@@ -93,12 +93,30 @@ The frontend runs on:
 Create `backend/.env` with the following values:
 
 ```env
-# Google Drive API
-DRIVE_FOLDER_ID=
+# Required for AI report generation (get from Google AI Studio)
+GEMINI_API_KEY=
 
-# Google Sheets API
+
+# GMAIL (Nodemailer)
+EMAIL_USER=your_email_here
+EMAIL_PASS=your_app_password_here
+
+
+# Gemini API
+GEMINI_API_KEY=
+
+
+# Google Sheets
 SPREADSHEET_ID=
 SHEET_NAME=Sheet1
+
+# Google Drive
+DRIVE_FOLDER_ID=
+
+# OAuth (optional - only if using OAuth instead of service account)
+OAUTH_CLIENT_ID=
+OAUTH_CLIENT_SECRET=
+OAUTH_REFRESH_TOKEN=
 ```
 
 > If you use Gmail, generate an App Password and enable the required account access settings.
