@@ -1,3 +1,5 @@
+import { uploadToDrive } from "./googleDrive.js";
+import { appendLead } from "./googleSheets.js";
 import nodemailer from "nodemailer";
 import fs from "fs";
 import express from "express";
@@ -55,10 +57,23 @@ Do NOT include fictional placeholders, bracketed text, or imaginary company name
 
   const data = await response.json();
 
-  return (
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-    "FAILED_TO_PARSE_RESPONSE"
-  );
+  if (!response.ok) {
+    console.error(
+      "Gemini API error",
+      response.status,
+      response.statusText,
+      JSON.stringify(data)
+    );
+    return data?.error?.message || "FAILED_TO_PARSE_RESPONSE";
+  }
+
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    console.error("Gemini response missing text", JSON.stringify(data));
+    return "FAILED_TO_PARSE_RESPONSE";
+  }
+
+  return text;
 }
 
 const transporter = nodemailer.createTransport({
@@ -81,6 +96,7 @@ app.post("/submit-lead", async (req, res) => {
   console.log("Route hit");
 
   const { company, email, name } = req.body;
+  const safeName = name || "Client";
   const safeEmail = email || "test@example.com";
 
   if (!company) {
@@ -88,55 +104,91 @@ app.post("/submit-lead", async (req, res) => {
   }
 
   try {
-    const report = await generateReport(company, name);
+    const report = await generateReport(company, safeName);
+
     async function sendEmail(to, company, filePath) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to,
-    subject: `Your ${company} Audit Report`,
-    text: `Attached is your personalized company audit report.`,
-    attachments: [
-      {
-        filename: `${company}_report.pdf`,
-        path: filePath,
-      },
-    ],
-  });
-}
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to,
+        subject: `Your ${company} Audit Report`,
+        text: `Attached is your personalized company audit report.`,
+        attachments: [
+          {
+            filename: `${company}_report.pdf`,
+            path: filePath,
+          },
+        ],
+      });
+    }
 
     console.log("Report generated successfully");
 
     const doc = new PDFDocument();
+    const safeFileCompany = (company || "company").replace(/\s+/g, "_");
+    const fileName = `${safeFileCompany}_report.pdf`;
 
-    const fileName = `${company.replace(/\s+/g, "_")}_report.pdf`;
+    await new Promise((resolve, reject) => {
+      const stream = fs.createWriteStream(fileName);
 
-    doc.pipe(fs.createWriteStream(fileName));
+      stream.on("finish", resolve);
+      stream.on("error", reject);
 
-    doc.fontSize(20).text(`${company} Audit Report`, {
-      align: "center",
+      doc.pipe(stream);
+
+      doc.fontSize(20).text(`${company} Audit Report`, {
+        align: "center",
+      });
+
+      doc.moveDown();
+
+      const cleanReport = report
+        .replace(/#/g, "")
+        .replace(/\*\*/g, "")
+        .replace(/\*/g, "");
+
+      doc.fontSize(12).text(cleanReport);
+      doc.end();
     });
 
-    doc.moveDown();
-
-    const cleanReport = report
-  .replace(/#/g, "")
-  .replace(/\*\*/g, "")
-  .replace(/\*/g, "");
-
-doc.fontSize(12).text(cleanReport);
-
-    doc.end();
-
     console.log("PDF generated:", fileName);
+
+    // Upload to Drive (attempt, but don't fail the whole request if it errors)
+    let driveFile = null;
+    let driveError = null;
+    try {
+      driveFile = await uploadToDrive(fileName, fileName);
+      console.log("Drive upload complete:", driveFile.webViewLink);
+    } catch (e) {
+      driveError = e?.message || String(e);
+      console.error("Drive upload failed:", driveError);
+    }
+
     await sendEmail(safeEmail, company, fileName);
-console.log("Email sent to:", safeEmail);
+    await appendLead({
+      name: safeName,
+      email: safeEmail,
+      company,
+      status: "Sent",
+    });
+
+    console.log("Email sent to:", safeEmail);
+
+    console.log("📊 Testing Sheets...");
+    await appendLead({
+      name: "Test User",
+      email: "test@test.com",
+      company: "Test Company",
+      status: "Test Row",
+    });
+    console.log("📊 Sheets test done");
 
     res.json({
-  message: "Report generated and emailed successfully",
-  report,
-  pdf: fileName,
-});
-
+      message: "Report generated and emailed successfully",
+      report,
+      pdf: fileName,
+      driveLink: driveFile?.webViewLink || null,
+      driveError,
+    });
   } catch (err) {
     console.log("🔥 ERROR:");
     console.dir(err, { depth: null });
