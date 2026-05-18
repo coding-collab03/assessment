@@ -1,3 +1,6 @@
+import validator from "validator";
+import axios from "axios";
+import * as cheerio from "cheerio";
 import { uploadToDrive } from "./googleDrive.js";
 import { appendLead } from "./googleSheets.js";
 import nodemailer from "nodemailer";
@@ -9,29 +12,32 @@ import PDFDocument from "pdfkit";
 
 dotenv.config();
 
-function fallbackReport(currentDate, safeName, safeCompany) {
-  return `
-Business Audit Report
+async function scrapeWebsite(url) {
+  try {
+    if (!url.startsWith("http")) {
+      url = "https://" + url;
+    }
 
-Date: ${currentDate}
-Client Name: ${safeName}
-Company: ${safeCompany}
+    const { data } = await axios.get(url, {
+  timeout: 10000,
+  headers: {
+    "User-Agent": "Mozilla/5.0",
+  },
+});
 
-Overview:
-AI analysis is currently unavailable.
+    const $ = cheerio.load(data);
 
-Strengths:
-Manual review recommended.
+    const text = $("body").text();
 
-Weaknesses:
-Automated insights could not be generated.
+    return text.replace(/\s+/g, " ").slice(0, 4000);
 
-Recommendations:
-Please retry later.
-`;
+  } catch (err) {
+    console.log("Scraping failed:", err.message);
+    return "";
+  }
 }
 
-async function generateReport(company, name) {
+async function generateReport(company, name, websiteContent) {
   const safeName = name || "Client";
   const safeCompany = company || "Company";
 
@@ -51,19 +57,34 @@ async function generateReport(company, name) {
           contents: [
             {
               role: "user",
-              parts: [{ text: `
-Generate a professional business audit report.
+              parts: [{
+  text: `
+You are an AI business consultant.
+
+Generate a highly personalized professional audit report.
 
 Date: ${currentDate}
 Client Name: ${safeName}
 Company: ${safeCompany}
 
-Include:
-- Overview
-- Strengths
-- Weaknesses
-- Recommendations
-              ` }],
+Company Website Content:
+${websiteContent || "No website content available."}
+
+Analyze the business and generate:
+
+1. Executive Summary
+2. Business Overview
+3. Strengths
+4. Weaknesses
+5. Opportunities
+6. Recommendations
+7. Personalized Outreach Message
+
+Be specific to the company.
+Avoid generic statements.
+Keep the tone professional.
+`
+}],
             },
           ],
         }),
@@ -124,16 +145,30 @@ console.log("🔥 Backend starting...");
 app.post("/submit-lead", async (req, res) => {
   console.log("Route hit");
 
-  const { company, email, name } = req.body;
+  const { company, email, name, website } = req.body;
+  if (!email || !validator.isEmail(email)) {
+  return res.status(400).json({
+    error: "Valid email is required",
+  });
+}
   const safeName = name || "Client";
-  const safeEmail = email || "test@example.com";
+ 
+  const safeEmail = email;
 
   if (!company) {
     return res.status(400).json({ error: "Company is required" });
   }
 
   try {
-    const report = await generateReport(company, safeName);
+    const websiteContent = website
+  ? await scrapeWebsite(website)
+  : "";
+
+    const report = await generateReport(
+  company,
+  safeName,
+  websiteContent
+);
 
     const doc = new PDFDocument();
 
@@ -144,27 +179,45 @@ app.post("/submit-lead", async (req, res) => {
     const fileName = `${safeFileCompany}_${Date.now()}_report.pdf`;
 
     await new Promise((resolve, reject) => {
-      const stream = fs.createWriteStream(fileName);
+  const stream = fs.createWriteStream(fileName);
 
-      stream.on("finish", resolve);
-      stream.on("error", reject);
+  stream.on("finish", resolve);
+  stream.on("error", reject);
 
-      doc.pipe(stream);
+  doc.pipe(stream);
 
-      doc.fontSize(20).text(`${company} Audit Report`, {
-        align: "center",
-      });
+  const cleanReport = report
+    .replace(/#/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "");
 
-      doc.moveDown();
+  doc.fillColor("#1E3A8A");
 
-      const cleanReport = report
-        .replace(/#/g, "")
-        .replace(/\*\*/g, "")
-        .replace(/\*/g, "");
+  doc.fontSize(24).text(`${company} Audit Report`, {
+    align: "center",
+  });
 
-      doc.fontSize(12).text(cleanReport);
-      doc.end();
-    });
+  doc.moveDown();
+
+  doc.fillColor("gray");
+
+  doc.fontSize(10).text(
+    `Generated on ${new Date().toLocaleString()}`,
+    {
+      align: "center",
+    }
+  );
+
+  doc.moveDown(2);
+
+  doc.fillColor("black");
+
+  doc.fontSize(12).text(cleanReport, {
+    lineGap: 4,
+  });
+
+  doc.end();
+});
 
     let driveFile = null;
     let driveError = null;
@@ -181,7 +234,17 @@ app.post("/submit-lead", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: safeEmail,
       subject: `Your ${company} Audit Report`,
-      text: "Attached is your audit report.",
+      html: `
+<h2>Hello ${safeName},</h2>
+
+<p>Thank you for your interest.</p>
+
+<p>Please find attached your personalized business audit report for <strong>${company}</strong>.</p>
+
+<p>We hope these insights provide value and actionable recommendations for your business.</p>
+
+<p>Best regards,<br/>SimplifIQ AI Team</p>
+`,
       attachments: [{ filename: fileName, path: fileName }],
     });
 
