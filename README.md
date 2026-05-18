@@ -1,22 +1,26 @@
-# Assessment Project
+# Audit Report Generator
 
-This is a full-stack web application built as part of an internship assessment using React for the frontend and Node.js/Express for the backend.
+This repository contains a full-stack web application with a React + Vite frontend and a Node.js + Express backend. The backend generates personalized PDF audit reports and sends them by email.
 
 ---
 
 ## Tech Stack
 
 **Frontend**
-- React (Vite)
+- React
+- Vite
 
 **Backend**
 - Node.js
 - Express
-
-**Other**
-- Nodemailer
-- dotenv
 - CORS
+- dotenv
+
+**Other tools**
+- Nodemailer
+- PDFKit
+- Google Gemini / Generative AI API
+- Axios
 
 ---
 
@@ -25,9 +29,14 @@ This is a full-stack web application built as part of an internship assessment u
 ```
 root/
 ├── backend/
+│   ├── package.json
+│   └── server.js
 ├── frontend/
+│   ├── package.json
+│   └── src/
 ├── package.json
 ├── package-lock.json
+└── README.md
 ```
 
 ---
@@ -36,33 +45,64 @@ root/
 
 ### Backend
 
+1. Open a terminal and navigate to `backend`
+2. Install dependencies:
+
 ```bash
 cd backend
 npm install
-npm start
 ```
 
-Backend runs on:
+3. Create a `.env` file in `backend/` with the required environment variables.
+4. Start the backend server:
+
+```bash
+node server.js
+```
+
+The backend listens on:
 
 - http://localhost:3001
 
 ### Frontend
 
+1. Open a separate terminal and navigate to `frontend`
+2. Install dependencies:
+
 ```bash
 cd frontend
 npm install
+```
+
+3. Start the frontend development server:
+
+```bash
 npm run dev
 ```
 
-Frontend runs on:
+The frontend runs on:
 
 - http://localhost:5173
 
 ---
 
+## Backend Environment Variables
+
+Create `backend/.env` with the following values:
+
+```env
+GEMINI_API_KEY=your_google_gemini_api_key
+EMAIL_USER=your_email@example.com
+EMAIL_PASS=your_email_password_or_app_password
+```
+
+> If you use Gmail, generate an App Password and enable the required account access settings.
+
+---
+
 ## Notes
 
-- Ensure you have Node.js installed.
-- Add any backend environment variables to `backend/.env` before starting the backend.
-- Run both backend and frontend concurrently in separate terminals to use the full application.
+- Run backend and frontend in separate terminals.
+- The backend generates a PDF audit report and sends it by email using the configured SMTP credentials.
+- Make sure Node.js is installed before running either service.
 

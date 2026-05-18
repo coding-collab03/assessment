@@ -48,9 +48,6 @@ Do NOT use placeholders like [Your Name].
 
   const data = await response.json();
 
-  console.log("🔍 FULL GEMINI RESPONSE:");
-  console.dir(data, { depth: null });
-
   return (
     data?.candidates?.[0]?.content?.parts?.[0]?.text ||
     "FAILED_TO_PARSE_RESPONSE"
@@ -74,7 +71,7 @@ app.use(express.json());
 console.log("🔥 Backend starting...");
 
 app.post("/submit-lead", async (req, res) => {
-  console.log("🔥 ROUTE HIT");
+  console.log("Route hit");
 
   const { company, email, name } = req.body;
   const safeEmail = email || "test@example.com";
@@ -118,9 +115,9 @@ app.post("/submit-lead", async (req, res) => {
 
     doc.end();
 
-    console.log("📄 PDF GENERATED:", fileName);
+    console.log("PDF generated:", fileName);
     await sendEmail(safeEmail, company, fileName);
-console.log("📧 EMAIL SENT TO:", safeEmail);
+console.log("Email sent to:", safeEmail);
 
     res.json({
   message: "Report generated and emailed successfully",
